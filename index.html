@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Quiz</title>
+    <style>
+        :root {
+            --bg-color: #f0f4f9;
+            --card-bg: #ffffff;
+            --text-main: #1f1f1f;
+            --text-secondary: #444746;
+            --border-color: #c4c7c5;
+            --hover-bg: #f3f8fc;
+            --accent-color: #0b57d0;
+            --correct-bg: #e6f4ea;
+            --correct-border: #137333;
+            --correct-text: #137333;
+            --incorrect-bg: #fce8e6;
+            --incorrect-border: #c5221f;
+            --incorrect-text: #c5221f;
+            --font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 600px;
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        h1, h2 {
+            margin-top: 0;
+            font-weight: 500;
+        }
+
+        /* Setup Section */
+        #setup-section {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            font-family: monospace;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(11, 87, 208, 0.2);
+        }
+
+        button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 10px 24px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s, box-shadow 0.2s;
+            align-self: flex-start;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #0842a0;
+            box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+        }
+
+        button:disabled {
+            background-color: #e3e3e3;
+            color: #888;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        #back-btn {
+            background-color: #f1f3f4;
+            color: var(--text-main);
+        }
+        
+        #back-btn:hover:not(:disabled) {
+            background-color: #e8eaed;
+        }
+
+        /* Quiz Section */
+        #quiz-section, #result-section {
+            display: none;
+        }
+
+        /* Slider Styles */
+        .slider-container {
+            margin-bottom: 20px;
+        }
+
+        #question-slider {
+            width: 100%;
+            cursor: pointer;
+            accent-color: var(--accent-color);
+        }
+
+        .question-header {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .question-text {
+            font-size: 18px;
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .option {
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 15px;
+        }
+
+        .option:hover:not(.disabled) {
+            background-color: var(--hover-bg);
+            border-color: var(--accent-color);
+        }
+
+        .option.disabled {
+            cursor: default;
+        }
+
+        .option.correct {
+            background-color: var(--correct-bg);
+            border-color: var(--correct-border);
+            color: var(--correct-text);
+        }
+
+        .option.incorrect {
+            background-color: var(--incorrect-bg);
+            border-color: var(--incorrect-border);
+            color: var(--incorrect-text);
+        }
+
+        .icon {
+            display: none;
+            font-weight: bold;
+        }
+
+        .option.correct .icon {
+            display: block;
+            color: var(--correct-text);
+        }
+
+        .option.incorrect .icon {
+            display: block;
+            color: var(--incorrect-text);
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .error-msg {
+            color: var(--incorrect-text);
+            font-size: 14px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="setup-section">
+        <h2>Load Quiz Data</h2>
+        <p style="margin-top:0; font-size:14px; color:var(--text-secondary);">Paste your JSON array of questions here.</p>
+        <textarea id="json-input" placeholder='[
+  {
+    "question": "Sample?",
+    "options": ["A", "B"],
+    "correctAnswerIndex": 0
+  }
+]'></textarea>
+        <div class="error-msg" id="json-error">Invalid JSON format. Please check your structure.</div>
+        <button id="start-btn">Start Quiz</button>
+    </div>
+
+    <div id="quiz-section">
+        <div class="slider-container">
+            <input type="range" id="question-slider" min="0" max="0" value="0">
+        </div>
+        <div class="question-header" id="question-tracker">Question 1 of X</div>
+        <div class="question-text" id="question-text"></div>
+        <div class="options-container" id="options-container"></div>
+        
+        <div class="nav-buttons">
+            <button id="back-btn">Back</button>
+            <button id="next-btn">Next</button>
+        </div>
+    </div>
+
+    <div id="result-section">
+        <h2>Quiz Completed!</h2>
+        <p class="question-text">You scored <span id="score-display"></span> out of <span id="total-display"></span>.</p>
+        <button id="restart-btn">Load New Quiz</button>
+    </div>
+</div>
+
+<script>
+    let quizData = [];
+    let currentQuestionIndex = 0;
+    let userAnswers = []; // Store the index of the user's selected answer for each question
+
+    const setupSection = document.getElementById('setup-section');
+    const quizSection = document.getElementById('quiz-section');
+    const resultSection = document.getElementById('result-section');
+    const jsonInput = document.getElementById('json-input');
+    const jsonError = document.getElementById('json-error');
+    const startBtn = document.getElementById('start-btn');
+    const backBtn = document.getElementById('back-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const restartBtn = document.getElementById('restart-btn');
+    const questionTracker = document.getElementById('question-tracker');
+    const questionSlider = document.getElementById('question-slider');
+    const questionText = document.getElementById('question-text');
+    const optionsContainer = document.getElementById('options-container');
+
+    startBtn.addEventListener('click', () => {
+        try {
+            const parsedData = JSON.parse(jsonInput.value);
+            if (!Array.isArray(parsedData) || parsedData.length === 0) {
+                throw new Error("JSON must be a non-empty array");
+            }
+            quizData = parsedData;
+            jsonError.style.display = 'none';
+            startQuiz();
+        } catch (e) {
+            jsonError.style.display = 'block';
+        }
+    });
+
+    nextBtn.addEventListener('click', () => {
+        if (currentQuestionIndex < quizData.length - 1) {
+            currentQuestionIndex++;
+            renderQuestion();
+        } else {
+            showResults();
+        }
+    });
+
+    backBtn.addEventListener('click', () => {
+        if (currentQuestionIndex > 0) {
+            currentQuestionIndex--;
+            renderQuestion();
+        }
+    });
+
+    questionSlider.addEventListener('input', (e) => {
+        currentQuestionIndex = parseInt(e.target.value, 10);
+        renderQuestion();
+    });
+
+    restartBtn.addEventListener('click', () => {
+        resultSection.style.display = 'none';
+        setupSection.style.display = 'flex';
+        jsonInput.value = '';
+    });
+
+    function startQuiz() {
+        currentQuestionIndex = 0;
+        // Initialize an array with nulls to track answers
+        userAnswers = new Array(quizData.length).fill(null); 
+        
+        setupSection.style.display = 'none';
+        quizSection.style.display = 'block';
+        
+        // Setup slider limits
+        questionSlider.max = quizData.length - 1;
+        
+        renderQuestion();
+    }
+
+    function renderQuestion() {
+        const currentQ = quizData[currentQuestionIndex];
+        const answeredIndex = userAnswers[currentQuestionIndex];
+        
+        // Update UI Text & Slider
+        questionTracker.textContent = `Question ${currentQuestionIndex + 1} of ${quizData.length}`;
+        questionText.textContent = currentQ.question;
+        questionSlider.value = currentQuestionIndex;
+        
+        // Update Buttons
+        backBtn.disabled = currentQuestionIndex === 0;
+        nextBtn.textContent = currentQuestionIndex === quizData.length - 1 ? 'Finish' : 'Next';
+        
+        optionsContainer.innerHTML = '';
+        
+        currentQ.options.forEach((optionText, index) => {
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'option';
+            optionDiv.innerHTML = `
+                <span>${optionText}</span>
+                <span class="icon"></span>
+            `;
+            
+            // If this question was already answered, apply styles
+            if (answeredIndex !== null) {
+                optionDiv.classList.add('disabled');
+                
+                if (index === currentQ.correctAnswerIndex) {
+                    optionDiv.classList.add('correct');
+                    optionDiv.querySelector('.icon').innerHTML = '&#10003;';
+                } else if (index === answeredIndex) {
+                    optionDiv.classList.add('incorrect');
+                    optionDiv.querySelector('.icon').innerHTML = '&#10005;';
+                }
+            } else {
+                // Only allow clicking if not already answered
+                optionDiv.addEventListener('click', () => handleAnswer(index));
+            }
+            
+            optionsContainer.appendChild(optionDiv);
+        });
+    }
+
+    function handleAnswer(selectedIndex) {
+        // Prevent action if already answered
+        if (userAnswers[currentQuestionIndex] !== null) return;
+
+        // Save the user's choice
+        userAnswers[currentQuestionIndex] = selectedIndex;
+        
+        // Re-render to show correct/incorrect states
+        renderQuestion();
+    }
+
+    function showResults() {
+        // Calculate score
+        let score = 0;
+        for (let i = 0; i < quizData.length; i++) {
+            if (userAnswers[i] === quizData[i].correctAnswerIndex) {
+                score++;
+            }
+        }
+
+        quizSection.style.display = 'none';
+        resultSection.style.display = 'block';
+        document.getElementById('score-display').textContent = score;
+        document.getElementById('total-display').textContent = quizData.length;
+    }
+</script>
+
+</body>
+</html>
