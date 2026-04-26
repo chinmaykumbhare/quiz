@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text to Quiz</title>
+    <style>
+        :root {
+            --bg-color: #f0f4f9;
+            --card-bg: #ffffff;
+            --text-main: #1f1f1f;
+            --text-secondary: #444746;
+            --border-color: #c4c7c5;
+            --hover-bg: #f3f8fc;
+            --accent-color: #0b57d0;
+            --correct-bg: #e6f4ea;
+            --correct-border: #137333;
+            --correct-text: #137333;
+            --incorrect-bg: #fce8e6;
+            --incorrect-border: #c5221f;
+            --incorrect-text: #c5221f;
+            --explanation-bg: #e8f0fe;
+            --explanation-border: #8ab4f8;
+            --font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 650px;
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            position: relative;
+        }
+
+        h1, h2 {
+            margin-top: 0;
+            font-weight: 500;
+        }
+
+        /* Setup Section */
+        #setup-section {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 300px;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            font-family: monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            resize: vertical;
+            box-sizing: border-box;
+            white-space: pre-wrap;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(11, 87, 208, 0.2);
+        }
+
+        button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 10px 24px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s, box-shadow 0.2s;
+            align-self: flex-start;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #0842a0;
+            box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+        }
+
+        button:disabled {
+            background-color: #e3e3e3;
+            color: #888;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        #back-btn {
+            background-color: #f1f3f4;
+            color: var(--text-main);
+        }
+        
+        #back-btn:hover:not(:disabled) {
+            background-color: #e8eaed;
+        }
+
+        .reset-btn {
+            background-color: transparent;
+            color: var(--incorrect-text);
+            border: 1px solid var(--incorrect-border);
+            padding: 6px 16px;
+            font-size: 13px;
+        }
+
+        .reset-btn:hover:not(:disabled) {
+            background-color: var(--incorrect-bg);
+            box-shadow: none;
+        }
+
+        /* Quiz Section */
+        #quiz-section, #result-section {
+            display: none;
+        }
+
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .header-title {
+            font-weight: 600;
+            color: var(--accent-color);
+            font-size: 18px;
+            margin: 0;
+        }
+
+        /* Slider Styles */
+        .slider-container {
+            margin-bottom: 20px;
+        }
+
+        #question-slider {
+            width: 100%;
+            cursor: pointer;
+            accent-color: var(--accent-color);
+        }
+
+        .question-header {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .question-text {
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+            white-space: pre-wrap;
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .option {
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 15px;
+            line-height: 1.4;
+        }
+
+        .option:hover:not(.disabled) {
+            background-color: var(--hover-bg);
+            border-color: var(--accent-color);
+        }
+
+        .option.disabled {
+            cursor: default;
+        }
+
+        .option.correct {
+            background-color: var(--correct-bg);
+            border-color: var(--correct-border);
+            color: var(--correct-text);
+        }
+
+        .option.incorrect {
+            background-color: var(--incorrect-bg);
+            border-color: var(--incorrect-border);
+            color: var(--incorrect-text);
+        }
+
+        .icon {
+            display: none;
+            font-weight: bold;
+            margin-left: 12px;
+            flex-shrink: 0;
+        }
+
+        .option.correct .icon {
+            display: block;
+            color: var(--correct-text);
+        }
+
+        .option.incorrect .icon {
+            display: block;
+            color: var(--incorrect-text);
+        }
+
+        /* Explanation Section */
+        #explanation-container {
+            display: none;
+            background-color: var(--explanation-bg);
+            border-left: 4px solid var(--explanation-border);
+            padding: 16px;
+            border-radius: 0 12px 12px 0;
+            margin-bottom: 24px;
+            font-size: 14.5px;
+            line-height: 1.5;
+            color: #1a73e8;
+        }
+
+        #explanation-container strong {
+            display: block;
+            margin-bottom: 4px;
+            color: #174ea6;
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .error-msg {
+            color: var(--incorrect-text);
+            font-size: 14px;
+            display: none;
+            background: var(--incorrect-bg);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--incorrect-border);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="setup-section">
+        <h2>Load Raw Text Quiz</h2>
+        <p style="margin-top:0; font-size:14px; color:var(--text-secondary);">Paste your formatted raw text below. Ensure it follows the numbered format with options A) to D), Answer:, and Explanation:.</p>
+        <textarea id="text-input" placeholder="1. Regarding the Carriage of Goods by Sea Act, 2025, which of the following statements is correct?
+A) It strictly adopts the Hamburg Rules to regulate maritime trade.
+B) It governs only the carriage of goods within Indian ports.
+C) The Act is based on the Hague Rules amended by the 1979 Visby Rules.
+D) A carrier is held fully liable for damage arising from perils of the sea.
+Answer: C
+Explanation: The Act adopts the Hague Rules amended by the 1979 Visby Rules..."></textarea>
+        <div class="error-msg" id="text-error">Invalid format. Please check your structure.</div>
+        <button id="start-btn">Start Quiz</button>
+    </div>
+
+    <div id="quiz-section">
+        <div class="header-bar">
+            <h2 class="header-title">Text to Quiz</h2>
+            <button class="reset-btn" id="reset-session-btn">Start New Session</button>
+        </div>
+        <div class="slider-container">
+            <input type="range" id="question-slider" min="0" max="0" value="0">
+        </div>
+        <div class="question-header" id="question-tracker">Question 1 of X</div>
+        <div class="question-text" id="question-text"></div>
+        <div class="options-container" id="options-container"></div>
+        
+        <div id="explanation-container">
+            <strong>Explanation:</strong>
+            <span id="explanation-text"></span>
+        </div>
+
+        <div class="nav-buttons">
+            <button id="back-btn">Back</button>
+            <button id="next-btn">Next</button>
+        </div>
+    </div>
+
+    <div id="result-section">
+        <h2>Quiz Completed!</h2>
+        <p class="question-text">You scored <span id="score-display"></span> out of <span id="total-display"></span>.</p>
+        <button id="restart-btn">Load New Quiz</button>
+    </div>
+</div>
+
+<script>
+    const STORAGE_KEY = 't2q_app_state';
+
+    let quizData = [];
+    let currentQuestionIndex = 0;
+    let userAnswers = []; 
+
+    const setupSection = document.getElementById('setup-section');
+    const quizSection = document.getElementById('quiz-section');
+    const resultSection = document.getElementById('result-section');
+    const textInput = document.getElementById('text-input');
+    const textError = document.getElementById('text-error');
+    
+    const startBtn = document.getElementById('start-btn');
+    const backBtn = document.getElementById('back-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const restartBtn = document.getElementById('restart-btn');
+    const resetSessionBtn = document.getElementById('reset-session-btn');
+    
+    const questionTracker = document.getElementById('question-tracker');
+    const questionSlider = document.getElementById('question-slider');
+    const questionText = document.getElementById('question-text');
+    const optionsContainer = document.getElementById('options-container');
+    const explanationContainer = document.getElementById('explanation-container');
+    const explanationText = document.getElementById('explanation-text');
+
+    // Parse Raw Text to JSON logic
+    function parseRawText(rawText) {
+        // Split text by lines that start with a number followed by a dot (e.g., "1. ")
+        const questionBlocks = rawText.split(/(?=(?:^|\n)\d+\.\s+)/)
+                                      .map(s => s.trim())
+                                      .filter(s => s.length > 0);
+        
+        const parsedData = [];
+        
+        for (let block of questionBlocks) {
+            // Remove the leading number and dot (e.g., "1. ")
+            let content = block.replace(/^\d+\.\s+/, '');
+            
+            // Extract Answer Letter (handles connected text like "NoneAnswer: B")
+            const answerMatch = content.match(/Answer:\s*([A-D])/i);
+            if (!answerMatch) throw new Error("Missing 'Answer:' tag or invalid option.");
+            
+            const answerLetter = answerMatch[1].toUpperCase();
+            const correctIndex = answerLetter.charCodeAt(0) - 65; // Converts A->0, B->1, C->2, D->3
+            
+            // Extract Explanation (Everything after 'Explanation:')
+            const explanationMatch = content.match(/Explanation:\s*([\s\S]*)$/i);
+            const explanation = explanationMatch ? explanationMatch[1].trim() : "No explanation provided.";
+            
+            // Isolate Question and Options by stripping Answer and Explanation
+            let qAndO = content.split(/Answer:/i)[0].trim();
+            
+            // Extract Options A), B), C), D)
+            const optionsRegex = /A\)([\s\S]*?)B\)([\s\S]*?)C\)([\s\S]*?)D\)([\s\S]*)$/;
+            const optionsMatch = qAndO.match(optionsRegex);
+            
+            if (!optionsMatch) throw new Error("Could not parse options A), B), C), D)");
+            
+            const options = [
+                optionsMatch[1].trim(),
+                optionsMatch[2].trim(),
+                optionsMatch[3].trim(),
+                optionsMatch[4].trim()
+            ];
+            
+            // Extract Question (Everything before A) )
+            const qText = qAndO.split(/A\)/)[0].trim();
+            
+            parsedData.push({
+                question: qText,
+                options: options,
+                correctAnswerIndex: correctIndex,
+                explanation: explanation
+            });
+        }
+        
+        return parsedData;
+    }
+
+    // Load state on page initialization
+    window.addEventListener('DOMContentLoaded', () => {
+        loadState();
+    });
+
+    function saveState() {
+        const state = {
+            quizData,
+            currentQuestionIndex,
+            userAnswers
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function loadState() {
+        const savedData = localStorage.getItem(STORAGE_KEY);
+        if (savedData) {
+            try {
+                const state = JSON.parse(savedData);
+                if (state.quizData && state.quizData.length > 0) {
+                    quizData = state.quizData;
+                    currentQuestionIndex = state.currentQuestionIndex;
+                    userAnswers = state.userAnswers;
+                    
+                    setupSection.style.display = 'none';
+                    quizSection.style.display = 'block';
+                    questionSlider.max = quizData.length - 1;
+                    renderQuestion();
+                }
+            } catch (e) {
+                console.error("Failed to parse saved state", e);
+                clearSession();
+            }
+        }
+    }
+
+    function clearSession() {
+        localStorage.removeItem(STORAGE_KEY);
+        quizData = [];
+        currentQuestionIndex = 0;
+        userAnswers = [];
+        
+        quizSection.style.display = 'none';
+        resultSection.style.display = 'none';
+        setupSection.style.display = 'flex';
+        textInput.value = '';
+        textError.style.display = 'none';
+    }
+
+    startBtn.addEventListener('click', () => {
+        try {
+            const parsedData = parseRawText(textInput.value);
+            if (parsedData.length === 0) {
+                throw new Error("No questions found.");
+            }
+            quizData = parsedData;
+            textError.style.display = 'none';
+            startQuiz();
+        } catch (e) {
+            console.error(e);
+            textError.textContent = `Error: ${e.message}. Please check formatting.`;
+            textError.style.display = 'block';
+        }
+    });
+
+    nextBtn.addEventListener('click', () => {
+        if (currentQuestionIndex < quizData.length - 1) {
+            currentQuestionIndex++;
+            renderQuestion();
+            saveState();
+        } else {
+            showResults();
+        }
+    });
+
+    backBtn.addEventListener('click', () => {
+        if (currentQuestionIndex > 0) {
+            currentQuestionIndex--;
+            renderQuestion();
+            saveState();
+        }
+    });
+
+    questionSlider.addEventListener('input', (e) => {
+        currentQuestionIndex = parseInt(e.target.value, 10);
+        renderQuestion();
+        saveState();
+    });
+
+    restartBtn.addEventListener('click', clearSession);
+    resetSessionBtn.addEventListener('click', () => {
+        if (confirm("Are you sure you want to discard your progress and start a new session?")) {
+            clearSession();
+        }
+    });
+
+    function startQuiz() {
+        currentQuestionIndex = 0;
+        userAnswers = new Array(quizData.length).fill(null); 
+        
+        setupSection.style.display = 'none';
+        quizSection.style.display = 'block';
+        
+        questionSlider.max = quizData.length - 1;
+        
+        renderQuestion();
+        saveState();
+    }
+
+    function renderQuestion() {
+        const currentQ = quizData[currentQuestionIndex];
+        const answeredIndex = userAnswers[currentQuestionIndex];
+        const optionLabels = ['A', 'B', 'C', 'D'];
+        
+        questionTracker.textContent = `Question ${currentQuestionIndex + 1} of ${quizData.length}`;
+        questionText.textContent = currentQ.question;
+        questionSlider.value = currentQuestionIndex;
+        
+        backBtn.disabled = currentQuestionIndex === 0;
+        nextBtn.textContent = currentQuestionIndex === quizData.length - 1 ? 'Finish' : 'Next';
+        
+        optionsContainer.innerHTML = '';
+        
+        currentQ.options.forEach((optionText, index) => {
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'option';
+            optionDiv.innerHTML = `
+                <span><strong>${optionLabels[index]})</strong> ${optionText}</span>
+                <span class="icon"></span>
+            `;
+            
+            if (answeredIndex !== null) {
+                optionDiv.classList.add('disabled');
+                
+                if (index === currentQ.correctAnswerIndex) {
+                    optionDiv.classList.add('correct');
+                    optionDiv.querySelector('.icon').innerHTML = '&#10003;'; // Checkmark
+                } else if (index === answeredIndex) {
+                    optionDiv.classList.add('incorrect');
+                    optionDiv.querySelector('.icon').innerHTML = '&#10005;'; // Cross
+                }
+            } else {
+                optionDiv.addEventListener('click', () => handleAnswer(index));
+            }
+            
+            optionsContainer.appendChild(optionDiv);
+        });
+
+        // Handle Explanation Visibility
+        if (answeredIndex !== null) {
+            explanationText.textContent = currentQ.explanation;
+            explanationContainer.style.display = 'block';
+        } else {
+            explanationContainer.style.display = 'none';
+        }
+    }
+
+    function handleAnswer(selectedIndex) {
+        if (userAnswers[currentQuestionIndex] !== null) return;
+
+        userAnswers[currentQuestionIndex] = selectedIndex;
+        
+        renderQuestion();
+        saveState();
+    }
+
+    function showResults() {
+        let score = 0;
+        for (let i = 0; i < quizData.length; i++) {
+            if (userAnswers[i] === quizData[i].correctAnswerIndex) {
+                score++;
+            }
+        }
+
+        quizSection.style.display = 'none';
+        resultSection.style.display = 'block';
+        document.getElementById('score-display').textContent = score;
+        document.getElementById('total-display').textContent = quizData.length;
+    }
+</script>
+
+</body>
+</html>
