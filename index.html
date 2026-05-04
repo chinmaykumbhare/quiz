@@ -21,7 +21,63 @@
             --incorrect-text: #c5221f;
             --font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
+        /* Dark Theme Auto-Switch */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #202124;
+                --card-bg: #303134;
+                --text-main: #e8eaed;
+                --text-secondary: #9aa0a6;
+                --border-color: #5f6368;
+                --hover-bg: #3c4043;
+                --accent-color: #8ab4f8;
+                
+                /* Quiz specific colors adapted for dark mode */
+                --correct-bg: #1e3a29;
+                --correct-border: #34a853;
+                --correct-text: #81c995;
+                --incorrect-bg: #3c1e1e;
+                --incorrect-border: #ea4335;
+                --incorrect-text: #f28b82;
+                
+                /* Explanation colors (for t2q.html) */
+                --explanation-bg: #283142;
+                --explanation-border: #669df6;
+            }
 
+            /* Dark mode specific button adjustments */
+            button {
+                color: #202124; /* Dark text on the light blue accent button */
+                font-weight: 600;
+            }
+            
+            button:hover:not(:disabled) {
+                background-color: #aecbfa;
+            }
+
+            button:disabled {
+                background-color: #5f6368;
+                color: #9aa0a6;
+            }
+
+            #back-btn {
+                background-color: #3c4043;
+                color: var(--text-main);
+            }
+            
+            #back-btn:hover:not(:disabled) {
+                background-color: #5f6368;
+            }
+
+            /* Reset button specific adjustments */
+            .reset-btn {
+                color: var(--incorrect-text);
+            }
+            
+            .reset-btn:hover:not(:disabled) {
+                background-color: var(--incorrect-bg);
+            }
+        }
         body {
             font-family: var(--font-family);
             background-color: var(--bg-color);
